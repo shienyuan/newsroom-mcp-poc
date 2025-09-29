@@ -7,6 +7,7 @@ integrating all MCP features (resources, tools, and prompts).
 import logging
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.azure import AzureProvider
+from fastmcp.server.auth.oidc_proxy import OIDCProxy
 
 from src.config import get_config
 from src.mcp.resources.sample import register_resources
@@ -16,10 +17,14 @@ from src.mcp.prompts.greeting import register_prompts
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for more verbose output
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Also set FastMCP and auth loggers to DEBUG
+logging.getLogger('fastmcp').setLevel(logging.DEBUG)
+logging.getLogger('fastmcp.server.auth').setLevel(logging.DEBUG)
 
 
 def create_server() -> FastMCP:
@@ -47,20 +52,29 @@ def create_server() -> FastMCP:
         logger.error(f"Failed to load configuration: {e}")
         raise
     
-    # Configure Azure OAuth provider
+    # Configure Azure OIDC proxy
+    # Using OIDCProxy directly instead of AzureProvider to avoid the 'resource' parameter
+    # which causes AADSTS901002 error with Azure AD v2.0
     try:
-        auth_provider = AzureProvider(
+        azure_oidc_config_url = (
+            f"https://login.microsoftonline.com/{config.azure_oauth.tenant_id}/v2.0/"
+            ".well-known/openid-configuration"
+        )
+
+        logger.info(f"Using Azure OIDC configuration URL: {azure_oidc_config_url}")
+
+        auth_provider = OIDCProxy(
+            config_url=azure_oidc_config_url,
             client_id=config.azure_oauth.client_id,
             client_secret=config.azure_oauth.client_secret,
-            tenant_id=config.azure_oauth.tenant_id,
             base_url=config.azure_oauth.base_url,
             redirect_path=config.azure_oauth.redirect_path,
             required_scopes=config.azure_oauth.required_scopes,
         )
-        logger.info(f"Azure OAuth provider configured with tenant: {config.azure_oauth.tenant_id}")
+        logger.info(f"Azure OIDC proxy configured with tenant: {config.azure_oauth.tenant_id}")
         logger.info(f"Redirect URI: {config.azure_oauth.redirect_uri}")
     except Exception as e:
-        logger.error(f"Failed to configure Azure OAuth provider: {e}")
+        logger.error(f"Failed to configure Azure OIDC proxy: {e}")
         raise
     
     # Initialize FastMCP server with authentication
