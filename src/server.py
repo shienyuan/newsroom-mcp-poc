@@ -9,6 +9,7 @@ from fastmcp import FastMCP
 from fastmcp.server.auth.providers.azure import AzureProvider
 from fastmcp.server.auth.oidc_proxy import OIDCProxy
 
+from src.auth.azure_oidc_proxy import AzureOIDCProxy
 from src.config import get_config
 from src.mcp.resources.sample import register_resources
 from src.mcp.tools.echo import register_tools as register_echo_tools
@@ -63,7 +64,8 @@ def create_server() -> FastMCP:
 
         logger.info(f"Using Azure OIDC configuration URL: {azure_oidc_config_url}")
 
-        auth_provider = OIDCProxy(
+        # Use our custom AzureOIDCProxy that removes the 'resource' parameter
+        auth_provider = AzureOIDCProxy(
             config_url=azure_oidc_config_url,
             client_id=config.azure_oauth.client_id,
             client_secret=config.azure_oauth.client_secret,
