@@ -2,6 +2,7 @@
 """Test client for Newsroom MCP server with OAuth authentication."""
 
 import asyncio
+import sys
 from fastmcp import Client
 
 
@@ -11,11 +12,15 @@ async def test_server():
     print("Testing Newsroom MCP Server")
     print("=" * 60)
     print()
-    
+
     server_url = "http://localhost:8000/mcp"
-    
+
     print(f"Connecting to: {server_url}")
     print("Note: This will open your browser for Azure OAuth authentication")
+    print("      (unless you have a cached token from a previous session)")
+    print()
+    print("💡 Tip: Run with --clear-cache to force fresh authentication")
+    print("   Example: python test_client.py --clear-cache")
     print()
     
     try:
@@ -48,15 +53,17 @@ async def test_server():
             # Test 4: Call the echo tool
             print("🔊 Calling echo tool...")
             echo_result = await client.call_tool("echo", {"message": "Hello from test client!"})
-            print(f"   Result: {echo_result}")
+            print(f"   Echo response: {echo_result.data}")
             print()
-            
+
             # Test 5: Call the server_info tool
             print("ℹ️  Calling server_info tool...")
             info_result = await client.call_tool("server_info", {})
-            print(f"   Server: {info_result.get('name')} v{info_result.get('version')}")
-            print(f"   Auth: {info_result.get('authentication')}")
-            print(f"   Features: {info_result.get('features')}")
+            # The result is in the structured_content attribute
+            info_data = info_result.structured_content
+            print(f"   Server: {info_data.get('name')} v{info_data.get('version')}")
+            print(f"   Auth: {info_data.get('authentication')}")
+            print(f"   Features: {info_data.get('features')}")
             print()
             
             # Test 6: List available prompts
@@ -92,6 +99,17 @@ async def test_server():
 
 
 if __name__ == "__main__":
+    # Check if user wants to clear OAuth cache
+    if len(sys.argv) > 1 and sys.argv[1] == "--clear-cache":
+        import os
+        import shutil
+        cache_dir = os.path.expanduser("~/.fastmcp/oauth-mcp-client-cache")
+        if os.path.exists(cache_dir):
+            print(f"🗑️  Clearing OAuth cache: {cache_dir}")
+            shutil.rmtree(cache_dir)
+            print("✅ Cache cleared! You will be prompted to authenticate again.")
+            print()
+
     success = asyncio.run(test_server())
     exit(0 if success else 1)
 
