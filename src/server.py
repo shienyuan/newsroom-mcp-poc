@@ -9,10 +9,10 @@ from fastmcp import FastMCP
 from fastmcp.server.auth.providers.azure import AzureProvider
 
 from src.config import get_config
-from src.mcp.resources.sample import register_resources
-from src.mcp.tools.echo import register_tools as register_echo_tools
-from src.mcp.tools.info import register_tools as register_info_tools
-from src.mcp.prompts.greeting import register_prompts
+from src.mcp_features.resources.sample import register_resources
+from src.mcp_features.tools.echo import register_tools as register_echo_tools
+from src.mcp_features.tools.info import register_tools as register_info_tools
+from src.mcp_features.prompts.greeting import register_prompts
 
 # Configure logging
 logging.basicConfig(

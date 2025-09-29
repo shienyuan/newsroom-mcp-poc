@@ -29,8 +29,8 @@ class AzureOAuthConfig:
     tenant_id: str
     base_url: str = "http://localhost:8000"
     redirect_path: str = "/auth/callback"
-    required_scopes: List[str] = field(default_factory=lambda: ["openid", "profile", "email"])
-    timeout_seconds: int = 30
+    required_scopes: List[str] = field(default_factory=lambda: ["User.Read", "email", "openid", "profile"])
+    timeout_seconds: int = 10
     
     @classmethod
     def from_env(cls) -> "AzureOAuthConfig":
@@ -66,18 +66,18 @@ class AzureOAuthConfig:
         redirect_path = os.getenv("FASTMCP_SERVER_AUTH_AZURE_REDIRECT_PATH", "/auth/callback")
         
         # Parse scopes (comma-separated string to list)
-        scopes_str = os.getenv("FASTMCP_SERVER_AUTH_AZURE_REQUIRED_SCOPES", "openid,profile,email")
+        scopes_str = os.getenv("FASTMCP_SERVER_AUTH_AZURE_REQUIRED_SCOPES", "User.Read,email,openid,profile")
         required_scopes = [scope.strip() for scope in scopes_str.split(",") if scope.strip()]
-        
+
         # Parse timeout
-        timeout_str = os.getenv("FASTMCP_SERVER_AUTH_AZURE_TIMEOUT_SECONDS", "30")
+        timeout_str = os.getenv("FASTMCP_SERVER_AUTH_AZURE_TIMEOUT_SECONDS", "10")
         try:
             timeout_seconds = int(timeout_str)
         except ValueError:
             logger.warning(
-                f"Invalid timeout value '{timeout_str}', using default 30 seconds"
+                f"Invalid timeout value '{timeout_str}', using default 10 seconds"
             )
-            timeout_seconds = 30
+            timeout_seconds = 10
         
         return cls(
             client_id=client_id,
