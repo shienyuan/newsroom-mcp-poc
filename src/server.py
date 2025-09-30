@@ -6,9 +6,9 @@ integrating all MCP features (resources, tools, and prompts).
 
 import logging
 from fastmcp import FastMCP
-from fastmcp.server.auth.providers.azure import AzureProvider
 
 from src.config import get_config
+from src.auth import PatchedAzureProvider
 from src.mcp_features.resources.sample import register_resources
 from src.mcp_features.tools.echo import register_tools as register_echo_tools
 from src.mcp_features.tools.info import register_tools as register_info_tools
@@ -51,10 +51,11 @@ def create_server() -> FastMCP:
         logger.error(f"Failed to load configuration: {e}")
         raise
     
-    # Configure Azure OAuth authentication using FastMCP's built-in AzureProvider
-    # The AzureProvider automatically handles Azure AD v2.0 endpoints and OAuth flows
+    # Configure Azure OAuth authentication using PatchedAzureProvider
+    # This patched provider removes the 'resource' parameter that Azure AD v2.0 doesn't support
+    # See: https://github.com/jlowin/fastmcp/issues/1846
     try:
-        auth_provider = AzureProvider(
+        auth_provider = PatchedAzureProvider(
             client_id=config.azure_oauth.client_id,
             client_secret=config.azure_oauth.client_secret,
             tenant_id=config.azure_oauth.tenant_id,
@@ -63,7 +64,7 @@ def create_server() -> FastMCP:
             required_scopes=config.azure_oauth.required_scopes,
             timeout_seconds=config.azure_oauth.timeout_seconds,
         )
-        logger.info(f"Azure OAuth provider configured with tenant: {config.azure_oauth.tenant_id}")
+        logger.info(f"Azure OAuth provider (patched for v2.0) configured with tenant: {config.azure_oauth.tenant_id}")
         logger.info(f"Redirect URI: {config.azure_oauth.redirect_uri}")
     except Exception as e:
         logger.error(f"Failed to configure Azure OAuth provider: {e}")
